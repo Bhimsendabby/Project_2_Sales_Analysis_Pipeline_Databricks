@@ -1,0 +1,186 @@
+{
+    "name": "dataflow_scdtype2",
+    "properties": {
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "linkedService": {
+                        "referenceName": "AzureDataLakeStorage1",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "source1"
+                },
+                {
+                    "linkedService": {
+                        "referenceName": "AzureSqlDatabase1",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "target"
+                }
+            ],
+            "sinks": [
+                {
+                    "linkedService": {
+                        "referenceName": "AzureSqlDatabase1",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "sink1"
+                },
+                {
+                    "linkedService": {
+                        "referenceName": "AzureSqlDatabase1",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "sink2"
+                }
+            ],
+            "transformations": [
+                {
+                    "name": "select1"
+                },
+                {
+                    "name": "derivedColumn1"
+                },
+                {
+                    "name": "lookup1"
+                },
+                {
+                    "name": "split1"
+                },
+                {
+                    "name": "derivedColumn2"
+                },
+                {
+                    "name": "derivedColumn3"
+                },
+                {
+                    "name": "alterRow1"
+                },
+                {
+                    "name": "union1"
+                }
+            ],
+            "scriptLines": [
+                "source(output(",
+                "          ProductID as short,",
+                "          ProductName as string,",
+                "          CategoryID as short,",
+                "          Price as double",
+                "     ),",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'parquet',",
+                "     fileSystem: 'silverlayer',",
+                "     folderPath: 'product',",
+                "     fileName: 'part-00000-ced5f228-ebd5-43c7-9512-91c4584ea243-c000.snappy.parquet') ~> source1",
+                "source(output(",
+                "          tgt_id as integer,",
+                "          tgt_hashvalue as long",
+                "     ),",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     format: 'query',",
+                "     store: 'sqlserver',",
+                "     query: 'select ProductID as tgt_id, hashvalue as tgt_hashvalue from ProductType2 where isactive =1',",
+                "     isolationLevel: 'READ_UNCOMMITTED') ~> target",
+                "source1 select(mapColumn(",
+                "          each(match(1==1),",
+                "               concat('src_',$$) = $$)",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select1",
+                "select1 derive(src_hashvalue = crc32(concat(toString(src_ProductID),src_ProductName,toString(src_CategoryID),toString(src_Price)))) ~> derivedColumn1",
+                "derivedColumn1, target lookup(src_ProductID == tgt_id,",
+                "     multiple: false,",
+                "     pickup: 'any',",
+                "     broadcast: 'auto')~> lookup1",
+                "lookup1 split(isNull(tgt_id),",
+                "     (src_ProductID == tgt_id) && (src_hashvalue != tgt_hashvalue),",
+                "     disjoint: false) ~> split1@(insert, update)",
+                "union1 derive(updatedBy = 'updated By dataflow',",
+                "          updatedDate = toTimestamp('9999-01-01 00:00:00'),",
+                "          createdBy = 'created By dataflow',",
+                "          createdDate = currentTimestamp(),",
+                "          isActive = 1) ~> derivedColumn2",
+                "split1@update derive(updateBy = 'updated by dataflow',",
+                "          updateDate = currentTimestamp(),",
+                "          isActive = 0) ~> derivedColumn3",
+                "derivedColumn3 alterRow(updateIf(1==1)) ~> alterRow1",
+                "split1@insert, split1@update union(byName: true)~> union1",
+                "derivedColumn2 sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     input(",
+                "          ProductID as integer,",
+                "          ProductName as string,",
+                "          CategoryID as integer,",
+                "          Price as decimal(18,0),",
+                "          updatedBy as string,",
+                "          updatedDate as timestamp,",
+                "          createdBy as string,",
+                "          createdDate as timestamp,",
+                "          HashValue as long,",
+                "          isActive as integer",
+                "     ),",
+                "     format: 'table',",
+                "     store: 'sqlserver',",
+                "     schemaName: 'dbo',",
+                "     tableName: 'PRODUCTTYPE2',",
+                "     insertable: true,",
+                "     updateable: false,",
+                "     deletable: false,",
+                "     upsertable: false,",
+                "     stagingSchemaName: '',",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true,",
+                "     errorHandlingOption: 'stopOnFirstError',",
+                "     mapColumn(",
+                "          ProductID = src_ProductID,",
+                "          ProductName = src_ProductName,",
+                "          CategoryID = src_CategoryID,",
+                "          Price = src_Price,",
+                "          updatedBy,",
+                "          updatedDate,",
+                "          createdBy,",
+                "          createdDate,",
+                "          HashValue = src_hashvalue,",
+                "          isActive",
+                "     )) ~> sink1",
+                "alterRow1 sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     input(",
+                "          ProductID as integer,",
+                "          ProductName as string,",
+                "          CategoryID as integer,",
+                "          Price as decimal(18,0),",
+                "          updatedBy as string,",
+                "          updatedDate as timestamp,",
+                "          createdBy as string,",
+                "          createdDate as timestamp,",
+                "          HashValue as long,",
+                "          isActive as integer",
+                "     ),",
+                "     format: 'table',",
+                "     store: 'sqlserver',",
+                "     schemaName: 'dbo',",
+                "     tableName: 'PRODUCTTYPE2',",
+                "     insertable: false,",
+                "     updateable: true,",
+                "     deletable: false,",
+                "     upsertable: false,",
+                "     keys:['ProductID','HashValue'],",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true,",
+                "     errorHandlingOption: 'stopOnFirstError',",
+                "     mapColumn(",
+                "          ProductID = tgt_id,",
+                "          updatedBy = updateBy,",
+                "          updatedDate = updateDate,",
+                "          HashValue = tgt_hashvalue,",
+                "          isActive",
+                "     )) ~> sink2"
+            ]
+        }
+    }
+}

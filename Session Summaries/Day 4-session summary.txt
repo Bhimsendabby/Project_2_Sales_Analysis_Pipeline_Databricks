@@ -1,0 +1,189 @@
+Session Summary | Cycle 33 
+
+1. End-to-End Azure Data Engineering Architecture
+
+The session focused on building a complete end-to-end data pipeline using Azure services.
+
+Emphasis was on designing a single parent pipeline that orchestrates the entire flow:
+
+Source systems (REST API / on-prem / SQL)
+
+Bronze layer (raw data in ADLS Gen2)
+
+Silver layer (cleaned & transformed data)
+
+Gold layer (business-ready data with SCD logic)
+
+Final consumption via Azure SQL Database and Power BI
+
+Participants were guided to think in terms of real-time enterprise architecture, not isolated activities.
+
+2. Bronze Layer Design (Raw Data Ingestion)
+
+Bronze layer acts as the system of record and stores data as received.
+
+Data ingestion covered:
+
+REST API ingestion using ADF Copy Activity
+
+Parameterized REST datasets (Base URL + Relative URL)
+
+Avoiding hardcoded endpoints
+
+ForEach loop usage:
+
+Array parameters used to dynamically ingest multiple endpoints or tables
+
+Copy Activity placed inside ForEach for scalability
+
+Bronze data should be retained long-term for auditing and reprocessing.
+
+3. Dynamic Folder and File Management in ADLS Gen2
+
+A key challenge discussed was how pipelines identify data when file names are random.
+
+Solution implemented:
+
+Pass table name as a parameter to the sink
+
+Create one folder per table
+
+Store Parquet files inside table-specific folders
+
+This approach enables:
+
+Clean separation of datasets
+
+Easier downstream processing
+
+Scalable and maintainable pipelines
+
+4. Silver Layer Transformation Strategy
+
+Silver layer is used for data cleansing, standardization, and validation.
+
+Key transformation rules:
+
+Validate NOT NULL only on primary key columns
+
+Do not apply NOT NULL checks on all columns (performance and business realism)
+
+Duplicate handling:
+
+Window transformation preferred over Aggregate
+
+Use partitioning on primary key and ordering by date/timestamp
+
+Silver data is temporary:
+
+Should be refreshed daily
+
+Should not be permanently stored or duplicated unnecessarily
+
+5. Cost Optimization and Data Duplication Control
+
+Avoid storing the same dataset in multiple locations without business need.
+
+Specifically:
+
+Do not store Silver data in both ADLS and Azure SQL
+
+Azure SQL should only contain final Gold/SCD outputs
+
+Emphasis on cost-aware architecture, reflecting real-world cloud projects.
+
+6. Slowly Changing Dimensions (SCD) Implementation
+
+SCD concepts were applied practically:
+
+SCD Type 1: overwrite old data
+
+SCD Type 2: maintain historical records with effective dates
+
+Project scope:
+
+Implement SCD Type 1 for one table
+
+Implement SCD Type 2 for one table
+
+Only SCD tables are loaded into Azure SQL Database as final outputs.
+
+7. Pipeline Orchestration Using Execute Pipeline
+
+Instead of using multiple triggers, Execute Pipeline activity was introduced.
+
+Benefits:
+
+Clear parent–child pipeline relationship
+
+Better dependency control
+
+Easier monitoring and troubleshooting
+
+Wait on Completion explained:
+
+Ensures downstream pipelines execute only after upstream success
+
+Prevents Gold layer failures due to incomplete Silver processing
+
+Result: a true enterprise-grade orchestration model
+
+8. Performance Optimization – Copy Activity
+
+Performance tuning discussed for large datasets (>1 million rows):
+
+Increase Data Integration Units (DIU)
+
+Increase Degree of Copy Parallelism
+
+Logging considerations:
+
+Disable detailed logging to avoid performance degradation
+
+Staging:
+
+Use selectively based on source–target scenario
+
+Key takeaway:
+
+Do not over-optimize for small datasets
+
+Scale performance settings based on data volume
+
+9. Performance Optimization – Data Flows
+
+Data Flow settings reviewed in detail:
+
+Logging level: Basic or None (avoid Verbose)
+
+Compute size: Small / Medium / Large based on data volume
+
+Compute type: General vs Memory Optimized
+
+Retry policy:
+
+Configure retry count and retry interval
+
+Helps handle transient network or runtime failures automatically
+
+Emphasis on production-grade stability and scalability
+
+10. Documentation and Review Expectations
+
+Documentation should explain architecture and flow, not tool-level clicks.
+
+Recommended structure:
+
+Architecture overview
+
+Bronze → Silver → Gold flow
+
+Parameterization strategy
+
+Performance tuning decisions
+
+Screenshots where needed
+
+All documentation must be completed and shared before the scheduled review.
+
+Review will focus on concept clarity, design decisions, and real-world readiness.

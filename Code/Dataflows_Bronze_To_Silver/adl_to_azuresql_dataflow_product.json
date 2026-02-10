@@ -1,0 +1,85 @@
+{
+    "name": "dataflow2",
+    "properties": {
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "linkedService": {
+                        "referenceName": "AzureDataLakeStorage1",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "source1"
+                }
+            ],
+            "sinks": [
+                {
+                    "linkedService": {
+                        "referenceName": "AzureDataLakeStorage1",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "sink1"
+                }
+            ],
+            "transformations": [
+                {
+                    "name": "split1"
+                },
+                {
+                    "name": "window1"
+                },
+                {
+                    "name": "filter1"
+                },
+                {
+                    "name": "select1"
+                }
+            ],
+            "scriptLines": [
+                "source(output(",
+                "          ProductID as short,",
+                "          ProductName as string,",
+                "          CategoryID as short,",
+                "          Price as double,",
+                "          internal_junk_code as string",
+                "     ),",
+                "     useSchema: false,",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'delimited',",
+                "     fileSystem: 'input',",
+                "     folderPath: 'product',",
+                "     fileName: 'product.csv',",
+                "     columnDelimiter: ',',",
+                "     escapeChar: '\\\\',",
+                "     quoteChar: '\\\"',",
+                "     columnNamesAsHeader: true) ~> source1",
+                "source1 split(!(isNull(ProductID)) && !(ProductID ==0),",
+                "     disjoint: false) ~> split1@(notnullprimarykeys)",
+                "split1@notnullprimarykeys window(over(ProductID),",
+                "     desc(ProductID, true),",
+                "     cnt = rowNumber()) ~> window1",
+                "window1 filter(cnt==1) ~> filter1",
+                "filter1 select(mapColumn(",
+                "          ProductID,",
+                "          ProductName,",
+                "          CategoryID,",
+                "          Price",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select1",
+                "select1 sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     format: 'parquet',",
+                "     fileSystem: 'silverlayer',",
+                "     folderPath: 'product',",
+                "     umask: 0022,",
+                "     preCommands: [],",
+                "     postCommands: [],",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> sink1"
+            ]
+        }
+    }
+}

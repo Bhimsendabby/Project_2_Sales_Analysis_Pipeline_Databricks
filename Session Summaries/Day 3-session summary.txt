@@ -1,0 +1,45 @@
+Bootcamp Project 1 | Cycle 36
+
+This bootcamp project is to provide hands-on experience in implementing a retail sales data pipeline using Azure data services. Mentees will work on ingesting, transforming, and visualizing data while ensuring proper validations and best practices.
+Architecture
+•	Tool: Draw.io to design the architecture diagram.
+Role
+Assume the role from Data Engineers responsible for implementing an end-to-end data pipeline in Azure. 
+Source Systems
+•	API: Extracting data from a HTTP or RESTful API.
+https://jsonplaceholder.typicode.com/
+i.	Dump the data into SQL DB from rest API
+
+•	On-Prem SQL Server: Extracting data from an on-premises SQL Server database.
+i.	Follow medallion architecture
+ii.	Create 5 tables with the data, e.g., Customer, Product, Sales, Product Category etc.
+iii.	Bring the data from these 5 tables into ADLS Gen2 – raw
+iv.	Use Data Flows for cleaning up duplicates, check whether primary key is having null or zeros – Validation Scenarios
+v.	Remove unnecessary columns
+vi.	Create SCD Type 1 for one table and SCD Type 2 for one table, using Data Flows
+vii.	Ingest data into Azure SQL Database
+
+Azure Data Lake Storage (ADLS)
+•	Bronze Layer: Raw ingested data from source systems.(don’t modify source data) –  CSV or Parquet format
+•	Silver Layer: Cleansed and transformed data. – Strictly Parquet format
+Data Transformation
+•	Tool: Azure Data Factory (ADF) Data Flow for transformations.
+Target System
+•	Azure SQL Database: Storing the final processed and transformed data.
+Data Visualization (Optional)
+•	Power BI: Create a report or dashboard to analyze sales trends. Get data from Azure SQL Database into Power BI Desktop. 
+•	Download Power BI Desktop software:
+https://www.microsoft.com/en-us/download/details.aspx?id=58494
+Data Validations
+•	Row Count Check: Ensure consistency before and after transformations.
+•	Pipeline JSON Validation: Ensure pipeline configurations are properly defined.
+Triggers
+•	Scheduled Trigger: Used for API source ingestion.(API to RAW)
+•	Scheduled Trigger: Used for on-prem SQL Server ingestion.
+•	Silver Layer has to start with Event trigger. Gold layer is continuation of silver layer.
+Project Deliverables
+Mentees should upload all relevant details to GitHub, including:
+•	SQL Scripts: DDL (schema creation) and DML (sample data) scripts.
+•	Pipeline JSON: Exported JSON of ADF pipelines.
+•	Documentation: A README file or a .doc file explaining the project steps, architecture, and key considerations
+•	Include Key vault as part of project, to store Database password and use it to connect to linked service.
